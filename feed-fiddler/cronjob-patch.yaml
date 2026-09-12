@@ -1,0 +1,15 @@
+# Must match ingress.yaml's host.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: feed-fiddler
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: feed-fiddler
+              env:
+                - name: FEED_FIDDLER_BASE_URL
+                  value: https://feed-fiddler.cubanyetis.net/

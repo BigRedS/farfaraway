@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: feed-fiddler-web
+  namespace: feed-fiddler
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - feed-fiddler.cubanyetis.net
+      secretName: feed-fiddler-web-tls
+  rules:
+    - host: feed-fiddler.cubanyetis.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: feed-fiddler-web
+                port:
+                  number: 80
