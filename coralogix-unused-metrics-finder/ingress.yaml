@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: coralogix-unused-metrics-finder
+  namespace: coralogix-unused-metrics-finder
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - coralogix-unused-metrics-finder.cubanyetis.net
+        - coralogix-unused-metrics.cubanyetis.net
+      secretName: coralogix-unused-metrics-finder-tls
+  rules:
+    - host: coralogix-unused-metrics-finder.cubanyetis.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: coralogix-unused-metrics-finder
+                port:
+                  number: 8765
+    - host: coralogix-unused-metrics.cubanyetis.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: coralogix-unused-metrics-finder
+                port:
+                  number: 8765

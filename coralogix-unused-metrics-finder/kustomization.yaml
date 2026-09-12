@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: coralogix-unused-metrics-finder
+resources:
+  - _namespace.yaml
+  - github.com/BigRedS/coralogix-unused-metrics-finder//deploy/k8s?ref=main
+  - ingress.yaml

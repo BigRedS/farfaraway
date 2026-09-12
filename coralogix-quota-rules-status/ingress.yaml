@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: coralogix-quota-rules-status
+  namespace: coralogix-quota-rules-status
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - coralogix-quota-rules-status.cubanyetis.net
+      secretName: coralogix-quota-rules-tls
+  rules:
+    - host: coralogix-quota-rules-status.cubanyetis.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: coralogix-quota-rules-status
+                port:
+                  number: 8765

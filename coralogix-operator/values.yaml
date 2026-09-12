@@ -1,0 +1,21 @@
+# Values for the `coralogix/coralogix-operator` chart.
+# https://github.com/coralogix/coralogix-operator/blob/main/charts/coralogix-operator/README.md
+coralogixOperator:
+  region: EU2
+  # No Prometheus Operator runs in this cluster, so disable the chart's
+  # default self-monitoring integration (it would otherwise create a
+  # ServiceMonitor/PrometheusRule CR whose CRDs don't exist here).
+  prometheusRules:
+    enabled: false
+
+serviceMonitor:
+  create: false
+
+# The API key secret is created by install.sh (from a user-provided,
+# gitignored credentials.env) rather than by the chart, so it never ends up
+# in a `helm get values` / release history.
+secret:
+  create: false
+  secretKeyReference:
+    name: coralogix-operator
+    key: CORALOGIX_API_KEY
