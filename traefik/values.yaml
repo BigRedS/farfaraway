@@ -1,0 +1,98 @@
+# Values for the official `traefik/traefik` chart.
+# https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml
+#
+# Replaces k3s's bundled Traefik+ServiceLB (disabled on donkey via ansible's
+# k3s_disable - see that repo's roles/k3s/defaults/main.yaml). ServiceLB
+# claims a Service's hostPort with no hostIP set, which binds BOTH address
+# families on the node regardless of the Service's own ipFamilies - there's
+# no annotation to scope it to one family, so it was conflicting with
+# apache owning ports 80/443 on donkey's ipv4 address. This chart's ports.*
+# entries support hostIP directly (confirmed against the chart's own
+# _podtemplate.tpl - it's read generically for any port, not just
+# documented ones), which actually restricts the bind to one address.
+#
+# The IPv6 address below is donkey's real public address - must match
+# k3s_node_ip in the ansible repo's host_vars/donkey.yaml if that ever
+# changes.
+#
+# hostIP here does two things, not one: it scopes the k8s-level hostPort
+# forwarding rule to this address (as intended), but the chart *also* feeds
+# it straight into Traefik's own --entryPoints bind address - which only
+# resolves inside the pod's own network namespace if that's actually the
+# host's namespace. Learned the hard way: without hostNetwork below,
+# Traefik crashes on startup ("bind: cannot assign requested address"),
+# since the pod's isolated netns has no such address to bind. hostNetwork
+# also means Traefik's other ports (8080: ping/dashboard/metrics) become
+# reachable on the host's real interfaces too, on whatever address Traefik
+# defaults that entrypoint to (no hostIP given for it) - currently only
+# saved from being internet-exposed by ufw not having a rule open for
+# 8080, which is incidental, not deliberate. api.dashboard defaults to
+# *true* in this chart (checked by rendering - not documented prominently)
+# and has no built-in auth, so it's disabled explicitly below rather than
+# relying on ufw alone as the only thing standing between it and the
+# internet.
+hostNetwork: true
+deployment:
+  # Required alongside hostNetwork: true - otherwise DNS silently falls
+  # back to the host's own resolver instead of the cluster's CoreDNS
+  # (a well-known k8s hostNetwork gotcha, not specific to this chart).
+  dnsPolicy: ClusterFirstWithHostNet
+
+api:
+  dashboard: false
+
+# The chart's default container securityContext drops all capabilities and
+# runs as non-root (UID 65532) - fine normally, but combined with
+# hostNetwork it means Traefik can't bind ports 80/443 ("bind: permission
+# denied", privileged ports need CAP_NET_BIND_SERVICE without root).
+#
+# Two things that look like the fix but aren't, in the order they get
+# ruled out:
+#
+# 1. securityContext.capabilities.add: [NET_BIND_SERVICE] - shows up
+#    correctly in `kubectl get pod -o yaml`, but doesn't actually work:
+#    Kubernetes never populates the Linux *ambient* capability set from
+#    capabilities.add for a non-root container, so the capability never
+#    reaches the running process. Long-standing, still-open upstream bug:
+#    https://github.com/kubernetes/kubernetes/issues/56374
+# 2. podSecurityContext.sysctls (lowering
+#    net.ipv4.ip_unprivileged_port_start per-pod) - the API server flatly
+#    rejects this for a hostNetwork pod ("may not be specified when
+#    hostNetwork is true"), since with hostNetwork there's no separate pod
+#    network namespace left to scope a pod-level sysctl to.
+#
+# The real fix has to be host-wide, not pod-scoped: see
+# k3s_allow_unprivileged_port_bind in the ansible repo's
+# roles/k3s/defaults/main.yaml, set true on donkey.
+
+ports:
+  web:
+    # port must match hostPort exactly under hostNetwork: true - there's no
+    # NAT/translation in a shared netns, so Traefik's own bind port
+    # literally has to be 80, not the chart's default 8000.
+    port: 80
+    hostPort: 80
+    hostIP: "2001:41d0:305:2100::7bd"
+  websecure:
+    port: 443
+    hostPort: 443
+    hostIP: "2001:41d0:305:2100::7bd"
+
+# No LoadBalancer controller runs here (that's what we just disabled) -
+# ClusterIP is enough since ports.* above handle external exposure directly
+# via hostIP, not via a LoadBalancer-type Service.
+service:
+  spec:
+    type: ClusterIP
+
+# Explicit name (rather than relying on the release name defaulting to
+# this) so existing Ingress objects' `ingressClassName: traefik` keeps
+# matching regardless of what this release happens to be called.
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+  name: "traefik"
+
+# Single node cluster - hostIP above only exists on donkey, so this only
+# works as long as it only ever schedules there. Revisit (node affinity or
+# similar) if a second node is ever added.
