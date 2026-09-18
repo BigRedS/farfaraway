@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ente-public-galleries
+  namespace: ente-public-galleries
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - ente-public-galleries.cubanyetis.net
+      secretName: ente-public-galleries-tls
+  rules:
+    - host: ente-public-galleries.cubanyetis.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ente-public-galleries
+                port:
+                  number: 80

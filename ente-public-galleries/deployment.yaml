@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ente-public-galleries
+  labels:
+    app: ente-public-galleries
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ente-public-galleries
+  template:
+    metadata:
+      labels:
+        app: ente-public-galleries
+    spec:
+      containers:
+        - name: ente-public-galleries
+          image: docker.io/bigreds/ente-galleries:20260918.2
+          ports:
+            - containerPort: 80
