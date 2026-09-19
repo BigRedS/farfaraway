@@ -1,0 +1,56 @@
+global:
+  domain: eu2.coralogix.com
+  clusterName: farfaraway
+  defaultApplicationName: farfaraway
+  defaultSubsystemName: farfaraway
+  collectionInterval: 120s
+opentelemetry-agent:
+  enabled: true
+  mode: daemonset
+  # Disable the AWS EC2 probing, we're not on AWS. Without this, the probes
+  # fail and the deployment fails.
+  # Needs to be set per-subhcart
+  provider: on-prem
+  # This cluster is ipv6-only
+  # Weirdly, this switch isn't documented, but claude found it used on the
+  # EKS/Fargate instrumntation to force ipv4-only.
+  # Needs to be set per-subchart.
+  networkMode: ipv6
+  presets:
+    spanMetrics:
+      enabled: false
+    profilesCollection:
+      enabled: false
+    profilesK8sAttributes:
+      enabled: false
+    jaegerReceiver:
+      enabled: false
+    zipkinReceiver:
+      enabled: false
+  startupProbe:
+    failureThreshold: 30
+    httpGet:
+      path: /
+      port: 13133
+    periodSeconds: 10
+  resources:
+    limits:
+      cpu: 200m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+opentelemetry-cluster-collector:
+  enabled: true
+  mode: deployment
+  # Same disabling of AWS stuff as above
+  provider: on-prem
+  # Same ipv6 fix as above
+  networkMode: ipv6
+  resources:
+    limits:
+      cpu: 200m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
