@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: ente-public-galleries
-          image: docker.io/bigreds/ente-galleries:20260919.0
+          image: docker.io/bigreds/ente-galleries:20260920.2
           ports:
             - containerPort: 80
