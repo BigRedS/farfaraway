@@ -31,4 +31,4 @@ and build an image, tagging with today's date:
 finally, in this repo, update the deploy with the new tag and apply it
 
     vim deployment.yaml
-    kubectl apply -k .
+    kubectl apply -k . && kubectl rollout -n ente-public-galleries restart deployment/ente-public-galleries
