@@ -10,9 +10,20 @@ spec:
   tls:
     - hosts:
         - ente-public-galleries.cubanyetis.net
+        - pics.avi.st
       secretName: ente-public-galleries-tls
   rules:
     - host: ente-public-galleries.cubanyetis.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ente-public-galleries
+                port:
+                  number: 80
+    - host: pics.avi.st
       http:
         paths:
           - path: /
